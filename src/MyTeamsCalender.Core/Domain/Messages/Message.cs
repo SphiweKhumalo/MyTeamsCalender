@@ -17,15 +17,15 @@ namespace MyTeamsCalender.Domain.Messages
         public User Sender { get; set; }
         public Channel? Channel { get; set; }
         public User? Reciever { get; set; }
-        public virtual string CreatedByPerson
-        {
-            get
-            {
-                var personRepo = IocManager.Instance.Resolve<IRepository<User, long>>();
-                var person = personRepo.FirstOrDefault(a => a.Id == CreatorUserId);
+        //public virtual string CreatedByPerson
+        //{
+        //    get
+        //    {
+        //        var personRepo = IocManager.Instance.Resolve<IRepository<User, long>>();
+        //        var person = personRepo.FirstOrDefault(a => a.Id == CreatorUserId);
 
-                return person.FullName;
-            }
-        }
+        //        return person.FullName;
+        //    }
+        //}
     }
 }

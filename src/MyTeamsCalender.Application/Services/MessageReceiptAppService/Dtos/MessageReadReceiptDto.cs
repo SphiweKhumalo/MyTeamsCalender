@@ -16,6 +16,7 @@ namespace MyTeamsCalender.Services.MessageReceiptAppService.Dtos
     {
         public Message Message { get; set; }
         public User Receiver { get; set; }
+        public long ReceiverId { get; set; }
         public DateTime? ReadOn { get; set; }
 
     }

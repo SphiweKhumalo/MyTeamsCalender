@@ -22,6 +22,6 @@ namespace MyTeamsCalender.Services.MessageAppService.Dtos
         public Channel? Channel { get; set; }
         //public long? RecieverId { get; set; }
         public User? Reciever { get; set; }
-        public string CreatedByPerson { get; set; }
+        //public string CreatedByPerson { get; set; }
     }
 }

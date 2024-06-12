@@ -1,16 +1,12 @@
 ﻿using Abp.Application.Services;
 using Abp.Domain.Repositories;
-using Abp.UI;
 using Microsoft.EntityFrameworkCore;
 using MyTeamsCalender.Domain.MessageReceipts;
+using MyTeamsCalender.Domain.MessageReceipts.Dtos;
 using MyTeamsCalender.Domain.Messages;
-using MyTeamsCalender.Domain.TeamMembers;
-using MyTeamsCalender.Domain.TeamMembers.Dtos;
 using MyTeamsCalender.Services.MessageReceiptAppService.Dtos;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MyTeamsCalender.Services.TeamMemberAppService
@@ -34,10 +30,11 @@ namespace MyTeamsCalender.Services.TeamMemberAppService
 
         //}
        // get all
-        public async Task<List<MessageReadReceiptDto>> GetAllMessageReceipts()
+        public async Task<List<MDto>> GetAllMessageReceipts()
         {
-            var receipts = await Repository.GetAllIncluding(a => a.Receiver).ToListAsync();
-            return ObjectMapper.Map<List<MessageReadReceiptDto>>(receipts); 
+            var receipts = await Repository.GetAllIncluding(a => a.Receiver,b=> b.Message).ToListAsync();
+            var result = ObjectMapper.Map<List<MDto>>(receipts); 
+            return result;
         }
     }
 }

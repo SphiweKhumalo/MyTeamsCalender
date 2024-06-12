@@ -1,4 +1,5 @@
 ﻿using Abp.Application.Services;
+using Abp.Application.Services.Dto;
 using Abp.Domain.Repositories;
 using Abp.UI;
 using Microsoft.AspNetCore.Mvc;
@@ -7,19 +8,16 @@ using MyTeamsCalender.Authorization.Users;
 using MyTeamsCalender.Domain.Channels;
 using MyTeamsCalender.Domain.MessageReceipts;
 using MyTeamsCalender.Domain.Messages;
-using MyTeamsCalender.Domain.TeamMembers;
-using MyTeamsCalender.Services.ChannelAppService.Dtos;
 using MyTeamsCalender.Services.MessageAppService.Dtos;
 using MyTeamsCalender.Services.MessageReceiptAppService.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MyTeamsCalender.Services.MessageAppService
 {
-    public class MessageAppService : AsyncCrudAppService<Message, MessageDto, Guid>
+    public class MessageAppService : AsyncCrudAppService<Message, MessageDto, Guid, PagedAndSortedResultRequestDto, MessageDto>
     {
         private readonly IRepository<User, long> _userRepository;
         private readonly IRepository<Channel, Guid> _channelRepository;
@@ -52,67 +50,67 @@ namespace MyTeamsCalender.Services.MessageAppService
         }
         [HttpGet]
         //getall messages with reciever,channel and sender
-        public async Task<List<MessageGetAllDto>> GetAllMessagesAsync()
+        public async Task<List<MessageDto>> GetAllMessagesAsync()
         {
             var messages = await Repository.GetAllIncluding(a => a.Sender, b => b.Reciever, c => c.Channel).ToListAsync();
-            var messageGet = new List<MessageGetAllDto>();
-            var mRead = await _messageReadReceiptRepository.GetAllListAsync(a => messages.Contains(a.Message));
 
-            try
+            return ObjectMapper.Map<List<MessageDto>>(messages);
+        }
+        public async Task<List<MessageGetAllDto>> GetAllMessagesForUserAsync(string sender, string reciever)
+        {
+            if (sender == null || reciever == null)
             {
+                throw new UserFriendlyException("Sender or Reciever cannot be null");
+            }
+            var messages = await Repository.GetAllIncluding(a => a.Sender, b => b.Reciever, c => c.Channel)
+                                            .Where(s => s.Sender.UserName == sender
+                                                    && s.Reciever.UserName == reciever
+                                                    || s.Reciever.UserName == sender
+                                                    && s.Sender.UserName == reciever)
+                                            .ToListAsync();
+
+            var messageGet = new List<MessageGetAllDto>();
+
+            if (messages is not null)
+            {
+                var mRead = await _messageReadReceiptRepository.GetAllListAsync(a => messages.Contains(a.Message));
                 messages.ForEach(a =>
                 {
                     messageGet.Add(new MessageGetAllDto
                     {
-                        Id = Guid.NewGuid(),
+                        Id = a.Id,
                         MessageContent = a.MessageContent,
                         Sender = a.Sender.UserName,
                         Reciever = a.Reciever.UserName,
                         Channel = a.Channel?.ChannelName,
                         CreationTime = a.CreationTime,
-                        //ReadReceipts = ObjectMapper.Map<MessageReadReceiptDto>(mRead)
+                        ReadReceipts = mRead.Count > 0 ? ObjectMapper.Map<List<ReadMessageDto>>(mRead.Where(b => b.Message.Id == a.Id)) : null
                     });
                 });
-                //foreach (var message in messages)
-                //{
-                //    messageGet.Add(new MessageGetAllDto
-                //    {
-                //        MessageContent = message.MessageContent,
-                //        Sender = message.Sender.UserName,
-                //        Reciever = message.Reciever.UserName,
-                //        Channel = message.Channel?.ChannelName,
-                //        CreationTime = message.CreationTime,
-                //        ReadReceipts = ObjectMapper.Map<List<MessageReadReceiptDto>>(mRead)
-                //    });
-                //}
             }
-            catch (Exception e)
-            {
-
-                throw new UserFriendlyException(e.Message);
-            }
-
-
-            try{ Console.WriteLine(messageGet); return ObjectMapper.Map<List<MessageGetAllDto>>(messageGet); } catch(Exception e) { Console.WriteLine(e.Message); return null; }
+            return messageGet;
         }
+
         //read message
         [HttpPut]
-        public async Task<MessageDto> ReadMessageAsync(MessageReceiptDto readDetails) //for one user chat
+        public async Task<MessageReadReceiptDto> ReadMessageAsync(MessageReceiptDto readDetails) //for one user chat
         {
             var chats = Repository.GetAll().Where(a => a.Sender.UserName == readDetails.SenderUsername && a.Reciever.UserName == readDetails.RecieverUsername).ToList();
+            //VALIDATE NOT READING SAME MESSAGE AS RECEIPT
             var toReadMessages = _messageReadReceiptRepository.GetAllIncluding(a => a.Message).Where(a => !chats.Contains(a.Message)).Select(a => a.Message).ToList();
-            if (toReadMessages.Count == 0)
+            var messageReadMessage = new MessageReadReceipt();
+
+            if (toReadMessages.Count > 0)
             {
                 foreach (var message in chats)
                 {
-                    var messageReadMessage = new MessageReadReceipt();
                     messageReadMessage.Message = message;
                     messageReadMessage.Receiver = await _userRepository.FirstOrDefaultAsync(a => a.UserName == readDetails.RecieverUsername);
                     messageReadMessage.ReadOn = DateTime.Now;
-                    _messageReadReceiptRepository.InsertAsync(messageReadMessage);
+                    await _messageReadReceiptRepository.InsertAsync(messageReadMessage);
                 }
             }
-            return null;
+            return ObjectMapper.Map<MessageReadReceiptDto>(messageReadMessage);
         }
     }
 }

@@ -9,10 +9,10 @@ namespace MyTeamsCalender.Domain.MessageReceipts.Dtos
 {
     public class MessageReadReceiptMappingProfile : Profile
     {
-        public MessageReadReceiptMappingProfile()
-        {
-            //CreateMap<MessageReadReceipt, MessageReadReceiptDto>();
+        //public MessageReadReceiptMappingProfile()
+        //{
+        //    CreateMap<MessageReadReceipt, messagereadre>();
 
-        }
+        //}
     }
 }

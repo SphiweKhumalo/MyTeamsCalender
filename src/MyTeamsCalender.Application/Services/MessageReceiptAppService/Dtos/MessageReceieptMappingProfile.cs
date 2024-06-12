@@ -16,7 +16,8 @@ namespace MyTeamsCalender.Services.MessageReceiptAppService.Dtos
                 .ForMember(a => a.Message, x => x.MapFrom(a => a.Message))
                 .ForMember(a => a.Receiver, x => x.MapFrom(a => a.Receiver))
                 .ForMember(a => a.ReadOn, x => x.MapFrom(a => a.ReadOn));
-
+            CreateMap<MessageReadReceipt, ReadMessageDto>()
+                .ForMember(a => a.Receiver, x => x.MapFrom(a => a.Receiver.FullName));
         }
     }
 }
